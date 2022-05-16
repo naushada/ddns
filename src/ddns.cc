@@ -3,7 +3,7 @@
 
 /**
  * @file ddns.cc
- * @author your name (you@domain.com)
+ * @author Mohammed Naushad Ahmed (naushad.dlnu@gmail.com)
  * @brief 
  * @version 0.1
  * @date 2022-05-16
