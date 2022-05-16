@@ -1,14 +1,38 @@
 #ifndef __http_parser_cc__
 #define __http_parser_cc__
 
+/**
+ * @file http_parser.cc
+ * @author Mohammed Naushad Ahmed (naushad.dln@gmail.com)
+ * @brief 
+ * @version 0.1
+ * @date 2022-05-16
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #include "http_parser.h"
 
+
+/**
+ * @brief Construct a new Http:: Http object
+ * 
+ */
 Http::Http()
 {
   m_uriName.clear();
   m_tokenMap.clear();
+  m_header.clear();
+  m_body.clear();
 }
 
+
+/**
+ * @brief Construct a new Http:: Http object
+ * 
+ * @param in 
+ */
 Http::Http(const std::string& in)
 {
   m_uriName.clear();
@@ -27,11 +51,25 @@ Http::Http(const std::string& in)
   m_body = get_body(in);
 }
 
+
+/**
+ * @brief Destroy the Http:: Http object
+ * 
+ */
 Http::~Http()
 {
+  m_uriName.clear();
   m_tokenMap.clear();
+  m_header.clear();
+  m_body.clear();
 }
 
+
+/**
+ * @brief 
+ * 
+ * @param in 
+ */
 void Http::parse_uri(const std::string& in)
 {
   std::string delim("\r\n");
@@ -40,7 +78,7 @@ void Http::parse_uri(const std::string& in)
   if(std::string::npos != offset) {
     /* Qstring */
     std::string req = in.substr(0, offset);
-    ACE_DEBUG((LM_DEBUG, ACE_TEXT("%D [worker:%t] %M %N:%l The request string is %s\n"), req.c_str()));
+    ACE_DEBUG((LM_DEBUG, ACE_TEXT("%D [worker:%t] %M %N:%l The string is \n%s\n"), req.c_str()));
     std::stringstream input(req);
     std::string parsed_string;
     std::string param;
@@ -66,6 +104,7 @@ void Http::parse_uri(const std::string& in)
 
           if(!p.compare("HTTP")) {
 
+            /* Query String --- <>?abc=123&xyz=321 */
             if(!isQsPresent) {
 
               m_uriName = parsed_string;
@@ -77,7 +116,7 @@ void Http::parse_uri(const std::string& in)
               add_element(param, value);
             }
           } else {
-            /* make available to stream to be get again*/
+            /* make these 4 characters available back to stream to be get again*/
             input.unget();
             input.unget();
             input.unget();
@@ -92,12 +131,14 @@ void Http::parse_uri(const std::string& in)
 
         case '+':
         {
+          /* There's a space in Query string parameter's value */
           parsed_string.push_back(' ');
         }
           break;
 
         case '?':
         {
+          /* Query string parameter is present */
           isQsPresent = true;
           m_uriName = parsed_string;
           parsed_string.clear();
@@ -106,6 +147,7 @@ void Http::parse_uri(const std::string& in)
 
         case '&':
         {
+          /* Query string parameter is present abc=1234 */
           value = parsed_string;
           add_element(param, value);
           parsed_string.clear();
@@ -116,6 +158,7 @@ void Http::parse_uri(const std::string& in)
 
         case '=':
         {
+          /* Query string parameter's value is present */
           param = parsed_string;
           parsed_string.clear();
         }
@@ -123,6 +166,7 @@ void Http::parse_uri(const std::string& in)
 
         case '%':
         {
+          /* Special character is present in Query string parameter's value. */
           std::int8_t octalCode[3];
           octalCode[0] = (std::int8_t)input.get();
           octalCode[1] = (std::int8_t)input.get();
@@ -143,6 +187,12 @@ void Http::parse_uri(const std::string& in)
   }
 }
 
+
+/**
+ * @brief 
+ * 
+ * @param in 
+ */
 void Http::parse_mime_header(const std::string& in)
 {
   std::stringstream input(in);
@@ -154,6 +204,7 @@ void Http::parse_mime_header(const std::string& in)
 
   /* getridof first request line 
    * GET/POST/PUT/DELETE <uri>?uriName[&param=value]* HTTP/1.1\r\n
+   * OR Response header line - HTTP/1.1 200 OK\r\n 
    */
   std::getline(input, line_str);
 
@@ -165,6 +216,7 @@ void Http::parse_mime_header(const std::string& in)
    * Param: Value\r\n
    */
   while(!input.eof()) {
+
     line_str.clear();
     std::getline(input, line_str);
     std::stringstream _line(line_str);
@@ -176,7 +228,8 @@ void Http::parse_mime_header(const std::string& in)
         {
           param = parsed_string;
           parsed_string.clear();
-          /* getridof of first white space */
+
+          /* get rid of of first white space */
           c = _line.get();
           while((c = _line.get()) != EOF) {
             switch(c) {
@@ -186,10 +239,12 @@ void Http::parse_mime_header(const std::string& in)
                 break;
 
               default:
+                /* Collecting character in parsed_string */
                 parsed_string.push_back(c);
                 break;
             }
           }
+
           /* we hit the end of line */
           value = parsed_string;
           add_element(param, value);
@@ -200,6 +255,7 @@ void Http::parse_mime_header(const std::string& in)
           break;
 
         default:
+          /* Collecting individual character */
           parsed_string.push_back(c);
           break;
       }
@@ -207,6 +263,11 @@ void Http::parse_mime_header(const std::string& in)
   }
 }
 
+
+/**
+ * @brief 
+ * 
+ */
 void Http::dump(void) const 
 {
     ACE_DEBUG((LM_DEBUG, ACE_TEXT("%D [worker:%t] %M %N:%l The uriName is %s\n"), m_uriName.c_str()));
@@ -216,24 +277,43 @@ void Http::dump(void) const
 
 }
 
+
+/**
+ * @brief 
+ * 
+ * @param in 
+ * @return std::string 
+ */
 std::string Http::get_header(const std::string& in)
 {
-
   if(std::string::npos != in.find("Content-Type: application/json")) {
+
     ACE_DEBUG((LM_DEBUG, ACE_TEXT("%D [worker:%t] %M %N:%l The content Type is application/json\n")));
     std::string body_delimeter("\r\n\r\n");
     size_t body_offset = in.find(body_delimeter.c_str(), 0, body_delimeter.length());
+
     if(std::string::npos != body_offset) {
+
       body_offset += body_delimeter.length();
       std::string document = in.substr(0, body_offset);
 
       ACE_DEBUG((LM_DEBUG, ACE_TEXT("%D [worker:%t] %M %N:%l The header is %s\n"), document.c_str()));
       return(document);
+
     }
   }
-  return(std::string(in));
+  
+  /* Return the empty string */
+  return(std::string());
 }
 
+
+/**
+ * @brief 
+ * 
+ * @param in 
+ * @return std::string 
+ */
 std::string Http::get_body(const std::string& in)
 {
   std::string ct = get_element("Content-Type");

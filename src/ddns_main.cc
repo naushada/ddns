@@ -1,6 +1,16 @@
 #ifndef __ddns_main_cc__
 #define __ddns_main_cc__
 
+/**
+ * @file ddns_main.cc
+ * @author your name (you@domain.com)
+ * @brief 
+ * @version 0.1
+ * @date 2022-05-16
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
 #include "ddns.h"
 
 

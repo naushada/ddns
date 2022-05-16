@@ -128,7 +128,7 @@ class TLSClient : public ACE_Event_Handler {
          * @return true 
          * @return false 
          */
-        bool preProcessResponse(ACE_Message_Block& mb);
+        bool preProcessResponse(ACE_Message_Block*& mb);
 
         bool isRunning() const {
             return(m_isRunning);

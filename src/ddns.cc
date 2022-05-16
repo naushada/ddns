@@ -1,26 +1,57 @@
 #ifndef __ddns_cc__
 #define __ddns_cc__
 
+/**
+ * @file ddns.cc
+ * @author your name (you@domain.com)
+ * @brief 
+ * @version 0.1
+ * @date 2022-05-16
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #include "ddns.h"
 
 
+/**
+ * @brief Construct a new Web Client Entry:: Web Client Entry object
+ * 
+ * @param webServer 
+ */
 WebClientEntry::WebClientEntry(WebServer *webServer)
 {
     m_parent = webServer;
 }
 
 
+/**
+ * @brief Destroy the Web Client Entry:: Web Client Entry object
+ * 
+ */
 WebClientEntry::~WebClientEntry()
 {
 
 }
 
+/**
+ * @brief 
+ * 
+ * @return WebServer& 
+ */
 WebServer& WebClientEntry::get_parent() const 
 {
     return(*m_parent);
 }
 
-
+/**
+ * @brief 
+ * 
+ * @param handle 
+ * @return true 
+ * @return false 
+ */
 bool WebClientEntry::processRequest(ACE_HANDLE handle)
 {
     ACE_Message_Block *mb = nullptr;
@@ -69,7 +100,12 @@ bool WebClientEntry::processRequest(ACE_HANDLE handle)
     return(true);
 }
 
-
+/**
+ * @brief 
+ * 
+ * @param http 
+ * @return std::string 
+ */
 std::string WebClientEntry::build200OK(Http http)
 {
     std::stringstream rsp("");
@@ -85,7 +121,12 @@ std::string WebClientEntry::build200OK(Http http)
     return(rsp.str());
 }
 
-
+/**
+ * @brief 
+ * 
+ * @param http 
+ * @return std::string 
+ */
 std::string WebClientEntry::buildIPResponse(Http http)
 {
     std::stringstream rsp("");
@@ -101,7 +142,14 @@ std::string WebClientEntry::buildIPResponse(Http http)
     return(rsp.str());
 }
 
-
+/**
+ * @brief 
+ * 
+ * @param handle 
+ * @param http 
+ * @return true 
+ * @return false 
+ */
 bool WebClientEntry::buildAndSendResponse(ACE_HANDLE handle, Http http)
 {
     std::string rsp("");
@@ -123,6 +171,13 @@ bool WebClientEntry::buildAndSendResponse(ACE_HANDLE handle, Http http)
     return(true);
 }
 
+/**
+ * @brief 
+ * 
+ * @param handle 
+ * @param rsp 
+ * @return ACE_INT32 
+ */
 ACE_INT32 WebClientEntry::sendResponse(ACE_HANDLE handle, std::string rsp)
 {
     size_t offset = 0;
@@ -146,6 +201,12 @@ ACE_INT32 WebClientEntry::sendResponse(ACE_HANDLE handle, std::string rsp)
     return(toBeSent);
 }
 
+/**
+ * @brief Construct a new Web Server:: Web Server object
+ * 
+ * @param ipStr 
+ * @param listenPort 
+ */
 WebServer::WebServer(std::string ipStr, std::string listenPort)
 {
     m_isRunning = false;
@@ -178,7 +239,10 @@ WebServer::WebServer(std::string ipStr, std::string listenPort)
                 m_listen.get_port_number(), m_listen.get_host_name(), addr.c_str()));
 }
 
-
+/**
+ * @brief Destroy the Web Server:: Web Server object
+ * 
+ */
 WebServer::~WebServer()
 {
     for(auto it = std::begin(m_webClientEntry); it != std::end(m_webClientEntry);) {
@@ -188,7 +252,12 @@ WebServer::~WebServer()
     }
 }
 
-
+/**
+ * @brief 
+ * 
+ * @param handle 
+ * @return ACE_INT32 
+ */
 ACE_INT32 WebServer::handle_input(ACE_HANDLE handle)
 {
     int ret_status = 0;
@@ -240,14 +309,27 @@ ACE_INT32 WebServer::handle_input(ACE_HANDLE handle)
     return(0);
 }
 
-
+/**
+ * @brief 
+ * 
+ * @param tv 
+ * @param act 
+ * @return ACE_INT32 
+ */
 ACE_INT32 WebServer::handle_timeout(const ACE_Time_Value &tv, const void *act)
 {
     /* to be implemented for Idle connection of client. */
     return(0);
 }
 
-
+/**
+ * @brief 
+ * 
+ * @param signum 
+ * @param s 
+ * @param u 
+ * @return ACE_INT32 
+ */
 ACE_INT32 WebServer::handle_signal(int signum, siginfo_t *s, ucontext_t *u)
 {
     for(auto it = std::begin(m_webClientEntry); it != std::end(m_webClientEntry);) {
@@ -263,21 +345,34 @@ ACE_INT32 WebServer::handle_signal(int signum, siginfo_t *s, ucontext_t *u)
     return(0);
 }
 
-
+/**
+ * @brief 
+ * 
+ * @param handle 
+ * @param mask 
+ * @return ACE_INT32 
+ */
 ACE_INT32 WebServer::handle_close (ACE_HANDLE handle, ACE_Reactor_Mask mask)
 {
     close(handle);
     return(0);
 }
 
-
+/**
+ * @brief 
+ * 
+ * @return ACE_HANDLE 
+ */
 ACE_HANDLE WebServer::get_handle() const
 {
     ACE_DEBUG((LM_DEBUG, ACE_TEXT("%D [Master:%t] %M %N:%l get_handle is invoked\n")));
     return(m_server.get_handle());
 }
 
-
+/**
+ * @brief 
+ * 
+ */
 void WebServer::start()
 {
     ACE_Reactor::instance()->register_handler(this, ACE_Event_Handler::ACCEPT_MASK |
@@ -299,6 +394,10 @@ void WebServer::start()
     stop();
 }
 
+/**
+ * @brief 
+ * 
+ */
 void WebServer::stop()
 {
     ACE_Reactor::instance()->remove_handler(m_server.get_handle(), ACE_Event_Handler::ACCEPT_MASK |
@@ -326,7 +425,7 @@ ACE_INT32 TLSClient::handle_timeout(const ACE_Time_Value &tv, const void *act)
  */
 ACE_INT32 TLSClient::handle_input(ACE_HANDLE handle)
 {
-    ACE_Message_Block *mb;
+    ACE_Message_Block *mb = nullptr;
     ACE_NEW_RETURN(mb, ACE_Message_Block(2048), -1);
     ACE_INT32 len = -1;
 
@@ -341,9 +440,66 @@ ACE_INT32 TLSClient::handle_input(ACE_HANDLE handle)
         ACE_ERROR((LM_ERROR, ACE_TEXT("%D [worker:%t] %M %N:%l handle_input connection is closed for handle %u\n"), handle));
         
     } else {
+
         mb->wr_ptr(len);
         std::string rsp(mb->rd_ptr(), mb->length());
         ACE_DEBUG((LM_DEBUG, ACE_TEXT("%D [Master:%t] %M %N:%l The response length %u and response is %s\n"), rsp.length(), rsp.c_str()));
+
+        /* Processing Response */
+        bool isCompleteResponse = preProcessResponse(mb);
+
+        if(isCompleteResponse) {
+
+            /* We have got the complete response - process it now. */
+            processResponse(*mb);
+            mb->release();
+
+        } else {
+#if 0
+            /* Partial response, */
+            ACE_INT32 remainingBytes = 0
+            ACE_INT32 expectedBytes = -1;
+            Http http(rsp);
+
+            if(http.header().length()) {
+                std::string CL = http.get_element("Content-Length");
+
+                if(CL.length()) {
+                    expectedBytes = std::stoi(http.header().length()) + std::stoi(CL);
+
+                    if(expectedBytes == len) {
+
+                        /* In one shot we got complete message */
+                        ACE_DEBUG((LM_DEBUG, ACE_TEXT("%D [Master:%t] %M %N:%l Complete response is received ofl ength %u\n"), rsp.length()));
+                        processResponse(*mb);
+                        mb->release();
+
+                    } else {
+                        /* We got the partial response */
+                        do {
+                            ACE_INT32 ret = -1;
+                            remainingLength = expectedLength - len;
+                            ACE_Message_Block *remMb = nullptr;
+                            ACE_NEW_RETURN(remMb, ACE_Message_Block(2024), -1);
+
+                            ret = m_stream.recv(remMb->wr_ptr(), remMb->size());
+
+                            if(ret > 0) {
+                                /* Success Case */
+                                mb->cont(remMb);
+                                mb = remMb;
+                                len += ret;
+                            }
+
+                        }while(remainingLength);
+                    }
+                    
+                }
+            }
+#endif
+        }
+
+
         m_isRunning = false;
     }
 
@@ -398,8 +554,6 @@ ACE_HANDLE TLSClient::get_handle() const
  */
 bool TLSClient::start()
 {
-    //ACE_SSL_SOCK_Connector conn(m_stream, m_peerAddr);
-
     if(m_conn.connect(m_stream, m_peerAddr) < 0) {
         ACE_ERROR((LM_ERROR, ACE_TEXT("%D [worker:%t] %M %N:%l connect to %s and port %u is failed\n"), 
                     m_peerAddr.get_host_name(), m_peerAddr.get_port_number()));
@@ -504,11 +658,57 @@ ACE_INT32 TLSClient::processResponse(ACE_Message_Block& mb)
  * @return true 
  * @return false 
  */
-bool TLSClient::preProcessResponse(ACE_Message_Block& mb)
+bool TLSClient::preProcessResponse(ACE_Message_Block*& mb)
 {
     bool isCompleteResponse = false;
-    std::string rsp(mb.rd_ptr(), mb.length());
+    std::string rsp(mb->rd_ptr(), mb->length());
 
+    /* Partial response, */
+    ACE_INT32 remainingBytes = 0;
+    ACE_INT32 expectedBytes = -1;
+    Http http(rsp);
+
+    if(http.header().length()) {
+
+        std::string CL = http.get_element("Content-Length");
+
+        if(CL.length()) {
+
+            /* Content Length is Present in Header */
+            expectedBytes = http.header().length() + std::stoi(CL);
+
+            if(expectedBytes == rsp.length()) {
+                        
+                /* In one shot we got complete message */
+                ACE_DEBUG((LM_DEBUG, ACE_TEXT("%D [Master:%t] %M %N:%l Complete response is received ofl ength %u\n"), rsp.length()));
+                isCompleteResponse = true;
+
+            } else {
+
+                ACE_INT32 ret = 0;
+                ACE_INT32 len = rsp.length();
+
+                /* We got the partial response */
+                do {
+                    
+                    ACE_Message_Block *remMb = nullptr;
+                    ACE_NEW_RETURN(remMb, ACE_Message_Block(2024), -1);
+
+                    ret = m_stream.recv(remMb->wr_ptr(), remMb->size());
+
+                    if(ret > 0) {
+                        /* Success Case */
+                        mb->cont(remMb);
+                        mb = remMb;
+                        len += ret;
+                        remainingBytes = expectedBytes - len;
+                    }
+
+                }while(remainingBytes);
+                isCompleteResponse = true;
+            }
+        }
+    }
     return(isCompleteResponse);
 }
 
